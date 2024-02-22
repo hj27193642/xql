@@ -34,3 +34,11 @@ poetry run python src/main.py
 ```
 
 
+## License
+```
+MIT Licens
+
+```
+
+## Author
+Hyojong (cpo@koism.com / hj27193642@gmail.com)
