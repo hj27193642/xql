@@ -2,6 +2,12 @@
 
 Simple & Light headless CMS  using json
 
+## Description
+FastAPI + Graphene + SQLAlchemy
+
+
+Implement the model with json, DB table, model, schema, query, and mutation are automatically created.
+
 
 ## Getting Started
 
