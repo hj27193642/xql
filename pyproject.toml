@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "xql"
+version = "0.1.0"
+description = "json to graphql API"
+authors = ["Hyojong <hj27193642@gmail.com>"]
+readme = "README.md"
+packages = [{include = "xql", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = "^0.109.0"
+graphene = "^3.3"
+sqlalchemy = "^2.0.25"
+mysql-connector = "^2.2.9"
+graphene-sqlalchemy = "^3.0.0rc1"
+starlette-graphene3 = "^0.6.0"
+uvicorn = "^0.25.0"
+python-dotenv = "^1.0.0"
+python-jose = "^3.3.0"
+cryptography = "^42.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
