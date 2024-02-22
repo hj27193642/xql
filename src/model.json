@@ -1,0 +1,30 @@
+{
+	"Main" : {
+		"table" : "main_test"
+		,"comment": "test main table"
+		,"columns" : {
+			"col1" : { "type":"varchar", "val":50, "index": true ,"comment": "col1"}
+			, "num1" : { "type":"smallInt","val":3, "index":true , "comment": "col2 int"}
+			,"num2": { "type":"tinyInt","val":3, "index":true ,"comment": "col3 int"}
+			,"col2" : { "type":"varchar", "val":110 ,"comment": "col4 str"}
+			, "col3": { "type":"mediumtext", "val":110 ,"comment": "col5 mediumtext str"}
+			, "col3": { "type":"longtext", "val":110 ,"comment": "col6 over writing example"}
+		}
+		, "foreignKeys" : ["Partners", "Users"]
+		
+	}
+	,"Posts" : {
+		"table" : "xfeeds_posts_contents"
+		,"comment": "Post tables"
+		,"columns" : {
+			"json_data": { "type":"longtext", "val":110 ,"comment": "JSON_FORMAT"}
+		}
+		,"json_querys" : {
+			"ttt" : "str"
+			,"num1" : "int"
+			,"num2" : "float"
+		}
+	}
+}
+
+
