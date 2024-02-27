@@ -1,7 +1,7 @@
 import graphene
 from typing import Optional, List, Union, Dict
 from graphene_sqlalchemy import SQLAlchemyObjectType, SQLAlchemyConnectionField
-from database import Session, Base, engine, JSON_MODELS, SECRET_KEY, ALGORITHM, EXPIRE_TIME, MASTERID, MASTERPW
+from database import Session, Base, engine, JSON_MODELS, SECRET_KEY, ALGORITHM, EXPIRE_TIME, MASTERID, MASTERPW, MASTERNAME
 
 from utility import logX, camelToSnake, Xcrypt, create_access_token, get_hash, hash_password
 from time import time 
@@ -338,6 +338,7 @@ def partners_zero (partnersObj, usersObj) :
 		,create_date = int(time())
 		,update_date = 0
 		,userid = MASTERID
+		,user_name = MASTERNAME
 		,passwd = hash_password(MASTERPW)
 		,level = 99
 		,counter = 0

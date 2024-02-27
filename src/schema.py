@@ -3,7 +3,7 @@ import graphene
 from utility import logX, camelToSnake
 from database import Base, engine, JSON_MODELS, BASE_MODELS, Session
 from graphene_sqlalchemy import SQLAlchemyObjectType, SQLAlchemyConnectionField
-from model import dynamic_models, dynamic_json_models
+from model import dynamic_models, dynamic_json_models, usersPartnersModel
 import resolver 
 
 
@@ -73,6 +73,14 @@ loger = {
 	, "mutations" : []
 }
 
+## @brief User Consumer Model Create - - - - - -
+"""
+ * @note 
+"""
+if BASE_MODELS == True:
+	for nm,val in usersPartnersModel.items() :
+		globals()[ nm+'Model'] = dynamic_models( nm ,val )
+
 
 
 ## @brief graphql Model Create - - - - - -
@@ -93,10 +101,9 @@ for nm,val in models.items() :
 # Base.metadata.reflect(bind=engine)
 Base.metadata.create_all(bind=engine)
 
-if BASE_MODELS == True:
-	from model import PartnersModel, UsersModel
-	resolver.partners_zero(PartnersModel, UsersModel)
 
+if BASE_MODELS == True:
+	resolver.partners_zero(globals()[ 'PartnersModel'], globals()[ 'UsersModel'])
 
 
 ## @brief access token schema type - - - - - -

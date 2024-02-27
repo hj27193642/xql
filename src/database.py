@@ -29,6 +29,7 @@ JSON_MODELS = environ['JSON_MODEL']
 BASE_MODELS = True if environ['BASE_MODEL'] == "True" else False
 MASTERID = environ['MASTERID']
 MASTERPW = environ['MASTERPW']
+MASTERNAME = environ['MASTERNAME']
 EXPIRE_TIME = int(environ['ACCESS_TOKEN_EXPIRE_MINUTES'])
 DB_CONN_URL = '{}://{}:{}@{}:{}/{}'.format(environ['DB_TYPE'],environ['DB_USER'],environ['DB_PASSWD'],environ['DB_HOST'],environ['DB_PORT'],environ['DB_NAME'],
 )

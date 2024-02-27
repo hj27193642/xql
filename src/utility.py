@@ -77,7 +77,6 @@ def create_access_token(
 		return False
 	to_encode = data.copy()
 	if expires_delta:
-		print(expires_delta)
 		expire = datetime.utcnow() + expires_delta
 	else:
 		expire = datetime.utcnow() + timedelta(minutes=15)

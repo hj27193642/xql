@@ -111,80 +111,67 @@ def dynamic_models( classNm='', dataSets={} ) :
 		
 	}
 	if dataSets.get('foreignKeys') is not None and 'Partners' in dataSets['foreignKeys']:
-		baseArgs['partner_idx'] = Column(UnsignedInt, index=True, nullable=False, default=1)
-		# @option ForeignKey("partners.idx"), 
+		baseArgs['partners_idx'] = Column(UnsignedInt, index=True, nullable=False, server_default="0", comment="Partners Fkey")
 	
 	if dataSets.get('foreignKeys') is not None and 'Users' in dataSets['foreignKeys']:
-		baseArgs['users_idx'] = Column(UnsignedInt, index=True, nullable=False, default=1)
+		baseArgs['users_idx'] = Column(UnsignedInt, index=True, nullable=False, server_default="1")
 		# @option ForeignKey("users.idx"), 
-
-	baseArgs['idx'] = Column(UnsignedInt, primary_key=True, nullable=False, default=None, autoincrement=True)
-	baseArgs['is_active'] = Column(TINYINT, index=True, nullable=False, default=1,comment="0:deactive 1:active")
-	baseArgs['create_date'] = Column(UnsignedInt, nullable=False, default=0)
-	baseArgs['update_date'] = Column(UnsignedInt, index=True, nullable=False, default=0)
+	
+	baseArgs['idx'] = Column(UnsignedInt, primary_key=True, nullable=False, server_default="0", autoincrement=True)
+	baseArgs['is_active'] = Column(TINYINT, index=True, nullable=False, server_default="1",comment="0:deactive 1:active")
+	baseArgs['create_date'] = Column(UnsignedInt, nullable=False, server_default="0")
+	baseArgs['update_date'] = Column(UnsignedInt, index=True, nullable=False, server_default="0")
 	for colNm, colData in dataSets['columns'].items():
-		idxValue = False
-		nullValue = False
-		comments = ''
-		if 'index' in colData:
-			idxValue = colData['index']
-		if 'null' in colData:
-			nullValue = colData['null']
-		if 'val' in colData :
+		vargs = {
+			"index" : False
+			,"nullable" : False
+			,"comment" : ""
+			,"server_default" : None
+		}
+
+		if colData.get('default') is not None and 'default' in colData:
+			vargs['server_default'] = str(colData['default'])
+		if colData.get('comment') is not None and 'comment' in colData:
+			vargs['comment'] = colData['comment']
+		if colData.get('index') is not None and 'index' in colData:
+			vargs['index'] = colData['index']
+		if colData.get('null') is not None and 'null' in colData:
+			vargs['nullable'] = colData['null']
+		if colData.get('val') is None :
 			colData['val'] = 0
-		if 'comment' in colData:
-			comments = colData['comment']
-		
-		baseArgs[colNm] = Column(colType(colData['type'], colData['val'] ), index=idxValue, nullable=nullValue, comment=comments )
+
+		baseArgs[colNm] = Column(colType(colData['type'], colData['val'] ),  **vargs )
 
 	return type(classNm+'Model', (Base, ), baseArgs)
 
 
 
 ## @brief BASE MODEL
-if BASE_MODELS == True :
-	## @brief Consumer Service model
-	"""
-	 * @params string classNm
-	 *
-	 * @note .env Turn on BASE_MODELS 
-	"""
-	class PartnersModel(Base):
-		__tablename__ = "partners"
-		__table_args__= {
-				'mysql_engine': 'InnoDB'
-				,'comment': "Partner Service"
-			}
-		idx = Column(UnsignedInt, primary_key=True, nullable=False, autoincrement=True)
-		is_active = Column(TINYINT, index=True, nullable=False, default=1,comment="0:deactive 1:active")
-		create_date = Column(UnsignedInt, nullable=False, default=0)
-		update_date = Column(UnsignedInt, nullable=False, default=0)
-		users_idx = Column(UnsignedInt, index=True, nullable=False, default=0, comment="Users Fkey"  )
-		site_id = Column(String(30), index=True, nullable=False, comment="users site id" )
-		domain = Column(String(50), index=True, nullable=False, comment="linked Domain" )
+usersPartnersModel = {
+	"Partners" : {
+		"table" : "partners"
+		,"comment": "Partner Service"
+		,"columns" : {
+			"users_idx" : { "type":"unsignedInt", "index": True ,"comment": "Users Fkey", "default": 1}
+			, "site_id" : { "type":"varchar","val":30, "index":True , "comment": "users site id"}
+			,"domain" : { "type":"varchar","val":30, "index":True , "comment": "linked Domain"}
+		}
+	}
+	,"Users" : {
+		"table" : "users"
+		,"comment": "Users base data"
+		,"columns" : {
+			"userid" : { "type":"email", "val":50, "index":True , "comment": "email"}
+			,"user_name" : {"type":"varchar", "val":20, "index":True , "comment": "user name"} 
+			,"passwd" : {"type":"varchar", "val":255, "index":True , "comment": "password SHA-512"} 
+			,"level" : {"type":"tinyInt", "val":3, "index":True , "comment": "user Level"} 
+			,"counter" : {"type":"unsignedInt", "val":11, "index":True , "comment": "connection count"} 
+		}
+		, "foreignKeys" : ["Partners"]
+	}
+}
 
 
-	## @brief User Model
-	"""
-	 * @params string classNm (camel case style )
-	 *
-	 * @note .env Turn on BASE_MODELS 
-	"""
-	class UsersModel(Base):
-		__tablename__ = "users"
-		__table_args__= {
-				'mysql_engine': 'InnoDB'
-				,'comment': "Users base data"
-			}
-		partners_idx = Column(UnsignedInt, index=True, nullable=False, default=0, comment="Partners Fkey"  ) #ForeignKey("partners.idx"),
-		idx = Column(UnsignedInt, primary_key=True, nullable=False, autoincrement=True, comment="PKEY")
-		is_active = Column(TINYINT, index=True, nullable=False, default=1,comment="0:deactive 1:active")
-		create_date = Column(UnsignedInt, nullable=False, default=0)
-		update_date = Column(UnsignedInt, nullable=False, default=0)
-		userid = Column(String(50), index=True, nullable=False, comment="email" )
-		passwd = Column(String(255), index=True, nullable=False, comment="passwd" )
-		level = Column(String(50), index=True, nullable=False, comment="email" )
-		counter = Column(UnsignedInt, nullable=False, default=0, comment="connection count")
 
 
 class Token(BaseModel):
