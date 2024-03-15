@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Text, Sequence, Boolean, SmallInteger, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Text, Date, DateTime, Sequence, Boolean, SmallInteger, Float, ForeignKey
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.mysql import INTEGER, TINYINT
 from database import Session, Base, engine, BASE_MODELS
@@ -37,6 +37,12 @@ def colType (tp='int', types=False ):
 		return SmallInteger
 	elif tp == "tinyInt":
 		return TINYINT
+	elif tp == "float":
+		return Float
+	elif tp == "date":
+		return Date
+	elif tp == "datetime":
+		return DateTime
 	elif tp == "varchar" or tp == "email":
 		if types == 0 or types == False: 
 			types = 20
@@ -47,6 +53,7 @@ def colType (tp='int', types=False ):
 		return Text(64000)
 	elif tp == "longtext":
 		return Text(4294000000)
+
 
 
 
@@ -114,10 +121,10 @@ def dynamic_models( classNm='', dataSets={} ) :
 		baseArgs['partners_idx'] = Column(UnsignedInt, index=True, nullable=False, server_default="0", comment="Partners Fkey")
 	
 	if dataSets.get('foreignKeys') is not None and 'Users' in dataSets['foreignKeys']:
-		baseArgs['users_idx'] = Column(UnsignedInt, index=True, nullable=False, server_default="1")
+		baseArgs['users_idx'] = Column(UnsignedInt, index=True, nullable=False, server_default="1", comment="Users Fkey")
 		# @option ForeignKey("users.idx"), 
 	
-	baseArgs['idx'] = Column(UnsignedInt, primary_key=True, nullable=False, server_default="0", autoincrement=True)
+	baseArgs['idx'] = Column(UnsignedInt, primary_key=True, nullable=False, server_default=None, autoincrement=True)
 	baseArgs['is_active'] = Column(TINYINT, index=True, nullable=False, server_default="1",comment="0:deactive 1:active")
 	baseArgs['create_date'] = Column(UnsignedInt, nullable=False, server_default="0")
 	baseArgs['update_date'] = Column(UnsignedInt, index=True, nullable=False, server_default="0")
@@ -162,16 +169,14 @@ usersPartnersModel = {
 		,"comment": "Users base data"
 		,"columns" : {
 			"userid" : { "type":"email", "val":50, "index":True , "comment": "email"}
-			,"user_name" : {"type":"varchar", "val":20, "index":True , "comment": "user name"} 
-			,"passwd" : {"type":"varchar", "val":255, "index":True , "comment": "password SHA-512"} 
-			,"level" : {"type":"tinyInt", "val":3, "index":True , "comment": "user Level"} 
-			,"counter" : {"type":"unsignedInt", "val":11, "index":True , "comment": "connection count"} 
+			,"user_name" : {"type":"varchar", "val":20 , "comment": "user name"} 
+			,"passwd" : {"type":"varchar", "val":255 , "comment": "password SHA-512"} 
+			,"level" : {"type":"tinyInt", "val":3 , "comment": "user Level"} 
+			,"counter" : {"type":"unsignedInt", "val":11 , "comment": "connection count"} 
 		}
 		, "foreignKeys" : ["Partners"]
 	}
 }
-
-
 
 
 class Token(BaseModel):

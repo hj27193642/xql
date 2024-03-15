@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 import re
 import json
 import math
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 
 
 """
@@ -31,7 +31,7 @@ xc = Xcrypt()
 type_str_ = ['text', 'varchar', 'mediumtext', 'longtext']
 type_int_ = ['int', 'unsignedInt',  'smallInt', 'tinyInt']
 type_float_ = ['float', 'double']
-type_date_ = ['datetime']
+type_date_ = ['datetime', 'date']
 type_email_ = ['email']
 
 
@@ -174,7 +174,7 @@ def get_mutate_qry (modelObj=None, headers=None, dataSets={}, **kwargs) :
 	# get consumer 
 	if dataSets.get('foreignKeys') is not None and 'Partners' in dataSets['foreignKeys']:
 		consumer = get_consumer_info(headers)
-		kwargs['partner_idx'] = consumer["idx"]
+		kwargs['partners_idx'] = consumer["idx"]
 	
 	# @note get Users information from AccessToken 
 	if dataSets.get('foreignKeys') is not None and 'Users' in dataSets['foreignKeys']:
@@ -200,8 +200,9 @@ def get_mutate_qry (modelObj=None, headers=None, dataSets={}, **kwargs) :
 	if kwargs.get( 'is_active' ) is None:
 		kwargs['is_active'] = 1
 	
-	kwargs['create_date'] = int(time())
-	kwargs['update_date'] = 0
+	if kwargs['idx'] is None :
+		kwargs['create_date'] = int(time())
+		kwargs['update_date'] = 0
 
 	if dataSets['columns'].get('json_data') and dataSets.get('json_querys') :
 		kwargs['json_data']=json.dumps(kwargs['json_data'], ensure_ascii=False)
@@ -221,6 +222,7 @@ def get_mutate_qry (modelObj=None, headers=None, dataSets={}, **kwargs) :
 			for attr, value in newData.__dict__.items():
 				# @note diff kwargs , object newData
 				if kwargs.get(attr) is not None and getattr(newData, attr) != kwargs[attr]:
+					# if attr != 'create_date':
 					setattr(newData, attr, kwargs[attr])
 			# @note Update current update date
 			newData.update_date = int(time())
@@ -255,11 +257,56 @@ def get_access_token (modelObj=None, headers=None, returnObj=None, userid='', pa
 				, expires_delta = timedelta(minutes=EXPIRE_TIME)
 				, algorithm = ALGORITHM
 			)
+			# Update 쿼리로 num 값을 증가시킴
+			result.counter = result.counter + 1
+			result.update_date = int(time())
+			session.add(result)
+			session.commit()
+
 			msg="Success get Accesstoken"
 		else:
 			access_token = False
 			msg="Don't Exist user information"
 		return returnObj(token=access_token, msg=msg)
+
+
+## @brief filter process
+"""
+ * @see schema.Query >> dynamic_resolver
+"""
+def get_where (modelObj, dataCols, wheres  ):
+	pattern = re.compile(r'\b[a-zA-Z0-9]+\s*(?:>=|>|==|!=|<|<=)\s*\w+\b')
+	pattern2 = re.compile(r'\b\s*(?:>|>=|==|!=|<=|<)\s*\b')
+	dataCols['idx'] = 'idx'
+	dataCols['update_date'] = 'date'
+	dataCols['create_date'] = 'date'
+	res = []
+	for where in wheres:
+		tmp = pattern.findall(where)
+		tmp2 = pattern2.findall(where)
+		if len(tmp)>0 and len(tmp2)>0:
+			strings = tmp[0].split(tmp2[0])
+			strings[0] = camelToSnake(strings[0].strip())
+			strings[1] = strings[1].strip()
+			if dataCols.get(strings[0]):
+				if strings[0] == 'idx':
+					strings[1] = int( xc.feedNum (strings[1]) )
+				tmp2 = tmp2[0].strip()
+				if strings[1].isdigit():
+					strings[1] = int(strings[1])
+				if tmp2 == '>':
+					res.append( getattr( modelObj , strings[0]) > strings[1]  )
+				if tmp2 == '>=':
+					res.append( getattr( modelObj , strings[0]) >= strings[1]  )
+				if tmp2 == '==':
+					res.append( getattr( modelObj , strings[0]) == strings[1]  )
+				if tmp2 == '!=':
+					res.append( getattr( modelObj , strings[0]) != strings[1]  )
+				if tmp2 == '<=':
+					res.append( getattr( modelObj , strings[0]) <= strings[1]  )
+				if tmp2 == '<':
+					res.append( getattr( modelObj , strings[0]) < strings[1]  )
+	return res
 
 
 
@@ -268,7 +315,7 @@ def get_access_token (modelObj=None, headers=None, returnObj=None, userid='', pa
  * @see schema.Query
 """
 def dynamic_resolver (modelObj=None, listObj=None, classNm='', dataSets={}) :
-	def _function (self, info, page=1, rows=15, search=None, sort='idx', asc=False, all=False, idx=None):
+	def _function (self, info, page=1, rows=15, search=None, sort='idx', asc=False, all=False, idx=None, where=[]):
 		offset = (page-1)*rows
 		pages = 1
 		current = 1
@@ -276,12 +323,15 @@ def dynamic_resolver (modelObj=None, listObj=None, classNm='', dataSets={}) :
 		with Session() as session:
 			res = session.query( modelObj )
 			if idx is None :
+				args = []
+				args = get_where (modelObj, dataSets['columns'], where  )
+				if len(args)>0:
+					res = res.filter( and_( *args ) )
 				# @note Apply Search word From text, varchar field
 				if search:
 					arg = []
 					for colNm, colData in dataSets['columns'].items():
 						if colData['type'] in type_str_ :
-							print(colNm)
 							arg.append( getattr( modelObj , colNm).ilike(f'%{search}%') )
 					res = res.filter( or_( *arg ) )
 				# @note Apply sorting
@@ -291,22 +341,30 @@ def dynamic_resolver (modelObj=None, listObj=None, classNm='', dataSets={}) :
 					res = res.order_by(getattr(modelObj, sort).desc())
 				# @note Apply pagination
 				count = res.count()
-				
 				# @note get all posts
 				if all == False:
 					pages = math.ceil(count/rows)
-					current = page
+					if page > pages:
+						current = pages
+						offset = (current-1)*rows
+					else:
+						current = page
+					if pages==0 :
+						current = 0
+						offset = 0
+
 					res = res.offset(offset).limit(rows)
 			else:
 				idx = int( xc.feedNum (idx) )
 				res = res.filter_by(idx=idx)
 
+			# print(str(res))
 			res = res.all()
 
-			if dataSets['columns'].get('json_data') and dataSets.get('json_querys') :
-				for key, value in enumerate(res):
+			for key, value in enumerate(res):
+				if dataSets['columns'].get('json_data') and dataSets.get('json_querys') :
 					res[key].json_data = json.loads(res[key].json_data)
-					res[key].idx = xc.feedKey(res[key].idx)
+				res[key].idx = xc.feedKey(res[key].idx)
 
 			return listObj (
 				pages = pages,
